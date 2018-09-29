@@ -11,7 +11,7 @@ Digital acknowledgement of honor pledge: Yared Tsehaye
 ## Assignment 4 Writeup
 
 ### Part 1 (45 pts)
-I first stated by netcatting into the server using the command nc cornerstoneairlines.co 45. I was greeted with a prompt to enter aj 
+I first started by netcatting into the server using the command nc cornerstoneairlines.co 45. I was greeted with a prompt to enter aj 
 IP address. This means that Fred implemented a ping system. so, i started testing different commands to see if the script would actually run and return some information. I sent over the command 
 
 127.0.0.1| ls /
@@ -24,7 +24,10 @@ and i got back the contents of the file flag.txt which is
 
 Good! Here's your flag: CMSC389R-{p1ng_as_a_$erv1c3}
 
-I have included a screen shot the result i obtained from running the script. 
+I have included a screen shot the result i obtained from running the script. There are a lot of ways to protect your server from these these vulnerabities. . some precautions that can be taken to avoid this kind of attack can be, 
+  avoiding using exec 
+  using escape sequences or validating inputs. this can be having a whitelist of accepted commands and rejecting others that can be harmful.  
+  escaping charachters that have meaning to the servers Operating System. This means preciding the commands with the appropriate escape charachter to make the meta charachter a valid input.   
 This system is vulerable to these types of attack because of mostly bad or lazy coding. An attacker can send over scripts as inputs and when it is processed, the script will be run if it is not escaped or treated as a required input. The best way to avoid this is to check the given value and input sanitization. This implementation will check the uptime of devices connected to the service. 
 ### Part 2 (55 pts)
 Given what i got from part one, I implmented an interactive shell that takes advantage of the aforementioned vulerability. The code works simply by using the socket library and mimicing netcat. I prompt for input and take that input to make sure the correct command is executed. for example, if i get an 
