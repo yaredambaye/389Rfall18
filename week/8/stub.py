@@ -1,103 +1,117 @@
 #!/usr/bin/env python2
-#author Yared Tsehaye
+#JORDAN BERNI
 import sys
 import struct
+from datetime import datetime
 
+MAGIC = 0xdeadbeef
+PNGMAGIC = (0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
+VERSION = 1
 
 def bork(msg):
     sys.exit(msg)
 
-# Some constants. You shouldn't need to change these.
-MAGIC = 0xdeadbeef
-VERSION = 1 
+def parse():
+    indx = 4 + 4 + 4 + 8 + 4
+    magic, version, unixtstamp, authorRaw, scount = struct.unpack("<LLLQL", data[0:indx])
 
+    if magic != MAGIC:
+        bork("Bad magic! Got %s, expected %s" % (hex(magic), hex(MAGIC)))
 
+    if version != VERSION:
+        bork("Bad version! Got %d, expected %d" % (int(version), int(VERSION)))
 
+    tstamp = datetime.fromtimestamp(unixtstamp)
+    if tstamp >= datetime.today(): 
+        bork("Bad timestamp! %d is before current time" % (tstamp))
+
+    authorHex = hex(authorRaw)[2:]
+    try:
+        author = authorHex.decode('hex')[::-1]
+    except TypeError:
+        bork("Bad author! %s is not a valid ascii encoded string" % authorHex)
+
+    if scount < 1:
+        bork("Bad number of sections! Number of sections must be greater than 0 (not %d)" % scount)
+
+    print("------- HEADER -------")
+    print("MAGIC: %s" % hex(magic))
+    print("VERSION: %d" % version)
+    print("TIMESTAMP: %s" % tstamp)
+    print("AUTHOR: %s" % author)
+    print("SECTION COUNT: %d" % scount)
+
+    print("\n-------  BODY  -------")
+
+    for sNum in range(0, 11):
+        indx = formatSection(sNum, indx, scount)
+        print("")
+
+def formatSection(sNum, i, scount):
+    sType, sLen = struct.unpack("<LL", data[i:i+8])
+    i = i + 8
+
+    print("----  SECTION  %d  ----" % sNum)
+    print("TYPE: %d" % sType)
+    print("LENGTH: %d" % sLen)
+    
+    if sLen <= 0:
+        return i
+
+    if sType == 9:
+        sValue = struct.unpack("%ds" % sLen, data[i:i+sLen])
+        
+    elif sType == 3:
+        sValue = struct.unpack("%ds" % sLen, data[i:i+sLen])
+
+    elif sType == 5:
+        v = struct.unpack("<%dL" % (sLen/4), data[i:i+sLen])
+        sValue = []
+        for j in range(0,(sLen/4)):
+            sValue.append(v[j])
+
+    elif sType == 2:
+        v = struct.unpack("<%dQ" % (sLen/8), data[i:i+sLen])
+        sValue = []
+        for j in range(0,(sLen/8)):
+            sValue.append(v[j])
+
+    elif sType == 4:
+        sValue = struct.unpack("%ds" % sLen, data[i:i+sLen]) 
+
+    elif sType == 6:
+        if sLen != 16:
+            bork("Bad section length! Section 6 must have a length of 16 not %d" % sLen)
+        v1, v2 = struct.unpack("<dd", data[i:i+sLen])
+        sValue = str(v1) + ", " + str(v2)
+
+    elif sType == 7:
+        if sLen != 4:
+            bork("Bad section length! Section 7 must have a length of 4 not %d" % sLen)
+        sValue, = struct.unpack("<L", data[i:i+sLen])
+        if sValue < 0 or sValue > scount-1:
+            bork("Bad section reference! %d is out of range (0 - %d)" % (sValue, scount-1))
+
+    elif sType == 1:
+        sValue = struct.unpack("%dB" % sLen, data[i:i+sLen])
+        i = i + sLen
+        pngFile = PNGMAGIC + sValue
+        outFile = open(sys.argv[1] + ".png","w")
+        outFile.write(struct.pack( "<%dB"  % len(pngFile), *pngFile))
+        outFile.close()
+        return i
+
+    else:
+        bork("Bad section type! %d is not a valid section type" % sType)
+
+    print("VALUE: %s" % sValue)
+    i = i + sLen
+    return i
+    
 if len(sys.argv) < 2:
-    sys.exit("Usage: python2 stub.py input_file.rcff ")
+    sys.exit("Usage: python2 stub.py input_file.rcff")
 
-# Normally we'd parse a stream to save memory, but the RCFF files in this
-# assignment are relatively small.
 with open(sys.argv[1], 'rb') as rcff:
     data = rcff.read()
 
-# Hint: struct.unpack will be VERY useful.
-# Hint: you might find it easier to use an index/offset variable than
-# hardcoding ranges like 0:8
-magic, version, timestamp, author, section_count = struct.unpack("<LLL8sL", data[0:24])
-
-if magic != MAGIC:
-    bork("Bad magic! Got %s, expected %s" % (hex(magic), hex(MAGIC)))
-
-if version != VERSION:
-    bork("Bad version! Got %d, expected %d" % (int(version), int(VERSION)))
-
-def printsections():
-    print(" ------- HEADER ------- ")
-    print(" MAGIC: %s" % hex(magic))
-    print(" VERSION: %d" % int(version))
-
-    # We've parsed the magic and version out for you, but you're responsible for
-    # the rest of the header and the actual RCFF body. Good luck!
-    print(" TIMESTAMP: " +  str(timestamp))
-    print(" AUTHOR: %s" % author)
-    print(" SECTION_COUNT: %d" % section_count)
-
-    print("-------  BODY  ------- ")
-
-    stbyte = 24 
-    endbyte = stbyte + 8 
-    
-    for i in  range(section_count + 2):
-        section_type, section_length = struct.unpack("<LL", data[stbyte:endbyte])
-        section_number = i + 1
-        st = endbyte     
-        if section_type == 1:
-            print(" SECTION_PNG ")
-            
-
-            contents = struct.unpack("%dB" % section_length, data[i:i+section_length])
-            pngFile=(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)+contents
-            outFile = open("output.png", "wb") 
-            outFile.write(struct.pack( "<%dB"  % len(pngFile), *pngFile))
-            outFile.close()
-        elif section_type == 2:
-            print(" SECTION_DWORDS ")
-            contents = struct.unpack("<%dQ" % (section_length/8), data[st:st+section_length])
-            print(" CONTENTS: ")
-            for i in range (section_length / 8):
-                print(contents[i])           
-        elif section_type == 3:
-            print(" SECTION_UTF8 ")
-            contents = struct.unpack(str(section_length) + "s", data[st:st+section_length])
-            print(" CONTENTS: %s\n" % contents)
-        
-        elif section_type == 4:
-            print(" SECTION_DOUBLES ")
-            contents = struct.unpack(str(section_length) + "s", data[st:st+section_length])
-            print(" CONTENTS: %s\n" % contents)
-        elif section_type == 5:
-            print(" SECTION_WORDS ")
-            contents = struct.unpack("<%dL" % (section_length/4), data[st:st+section_length])
-            print(" CONTENTS: %s\n" % unicode(contents))
-        elif section_type == 6:
-            print(" SECTION_COORD ")
-            cord_1 , cord_2 = struct.unpack("<dd", data[st:st+section_length])
-            print(" CONTENTS: %s , %s \n" %(str(cord_1), str(cord_2)))
-        elif section_type == 7:
-            print(" SECTION_REFERENCE ")
-            contents, = struct.unpack("<L", data[st:st+section_length])
-            print(" CONTENTS: %s\n" % contents)
-        elif section_type == 9:
-            print(" SECTION_ASCII ")
-            contents = struct.unpack(str(section_length) + "s", data[st:st+section_length])
-            print(" CONTENTS: %s\n" % contents)          
-        else:
-            print(" INVALID ")
-            sys.exit()
-                
-        stbyte = st+section_length 
-        endbyte = stbyte + 8
-
-if __name__ == "__main__":
-    printsections()
+parse()
