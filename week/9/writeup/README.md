@@ -31,6 +31,8 @@ ppizza
 
 ### Part 2 (40 Pts)
 
+>You found an interesting trivia service running on a distant computer. From my experience of highly-contrieved trivia services such as this one, I have a hunch if you can answer each of the questions, you'll get a flag in return. Stub code is provided in part2.py. nc 142.93.117.193 7331
+
 The second part was a bit tricky. I first started out by just nc'ing to the server and using an online hasher to get the correct results. i tried to do this a few times(at least 10) by manually inputing the results, and i failed to get the flag. 
 
 I then used python to automate this process for me. The first time i connect i get the following prompt. 
