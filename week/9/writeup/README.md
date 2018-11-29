@@ -1,7 +1,11 @@
 Writeup 9 - Crypto I
 =====
 
+<<<<<<< HEAD
 Name: Yared Tsehaye
+=======
+Name: Yared Tsehaye	
+>>>>>>> completed assignment 10
 Section: 0201
 
 I pledge on my honor that I have not given or received anyunauthorized assistance on this assignment or examination.
