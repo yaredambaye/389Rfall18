@@ -1,5 +1,5 @@
 #!/usr/bin/env python2
-#JORDAN BERNI
+
 import sys
 import struct
 from datetime import datetime
